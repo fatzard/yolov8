@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>基于YOLOv8的火灾检测系统</title>
+    <style>
+         /* 设置全体字体和背景 */
+        html, body {
+            height: 100%; /* 确保整个页面的高度至少与视口一样高 */
+            margin: 0; /* 移除默认边距 */
+            background-image: url('./pic_source/niceb.jpg'); /* 添加背景图像 */
+            background-size: cover; /* 背景图像覆盖整个可视区域 */
+            background-position: center; /* 背景图像居中显示 */
+            background-attachment: fixed; /* 背景图像固定，不随滚动条滚动 */
+        }
+
+        body {
+            display: flex; /* 应用Flexbox布局 */
+            flex-direction: column; /* 将元素垂直堆叠 */
+            min-height: 100vh; /* 最小高度为视口高度 */
+        }
+
+        /* 设置顶部导航条样式 */
+        header {
+            background: #333;
+            color: white;
+            padding: 8px 0;
+        }
+
+        header nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        header nav ul li {
+            padding: 0 30px;
+        }
+        main {
+            ackground: white;
+            width: 75%;
+            margin: 20px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow-x: auto; /* 允许水平滚动 */
+            flex: 1; /* 使<main>元素占用所有可用空间 */
+        }
+
+        /* 页脚样式 */
+        footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* 其他元素的样式 */
+        h1 {
+            color: #333;
+        }
+
+        nav ul {
+            list-style-type: none; /* 移除列表项的默认标记 */
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 清除内部浮动 */
+            background-color: #333; /* 导航栏背景色 */
+        }
+
+        nav li {
+            float: left; /* 列表项横向排列 */
+        }
+
+        nav li a {
+            display: block; /* 使链接填满整个列表项区域 */
+            color: white; /* 链接文本颜色 */
+            text-align: center; /* 文本居中 */
+            padding: 14px 16px; /* 链接内边距 */
+            text-decoration: none; /* 移除下划线 */
+        }
+
+        nav li a:hover {
+            background-color: #111; /* 鼠标悬停时的背景色 */
+        }
+
+        label {
+            margin-right: 10px;
+        }
+        /* 导航栏用户登录圆框样式 */
+        .user-login {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-login a {
+            display: block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px; /* 使文字垂直居中 */
+            border-radius: 50%; /* 圆形 */
+            background: #666; /* 深灰色背景 */
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .user-login a:hover {
+            background: #888; /* 鼠标悬浮时变为浅灰色 */
+        }
+
+        .user-login.logged-in a {
+            background-color: #4CAF50; /* 登录成功后的背景颜色 */
+        }
+
+        /* 模态弹窗基本样式 */
+        .modal {
+            display: none; /* 默认隐藏 */
+            position: fixed; /* 固定在屏幕中间 */
+            z-index: 1; /* 确保在顶部 */
+            left: 0;
+            top: 0;
+            width: 100%; /* 全宽 */
+            height: 100%; /* 全高 */
+            overflow: auto; /* 如果需要滚动条 */
+            background-color: rgb(0,0,0); /* 背景色 */
+            background-color: rgba(0,0,0,0.4); /* 黑色，略微透明 */
+        }
+
+           /* 模态内容框 */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 居中，顶部留出距离 */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%; /* 减少宽度百分比 */
+            max-width: 400px; /* 设置一个最大宽度 */
+        }
+
+        /* 关闭按钮样式 */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 15px; /* 添加一些间距 */
+        }
+
+        /* 标签和输入框的样式 */
+        label {
+            display: block; /* 使标签独占一行 */
+            margin-bottom: 5px; /* 添加一些间距 */
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px; /* 添加一些间距 */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        input[type="checkbox"] {
+            margin-top: 5px;
+        }
+
+        /* 按钮样式 */
+        button {
+            padding: 10px 15px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #4cae4c;
+        }
+
+        .image-scroll-container {
+            display: flex;
+            overflow-x: hidden; /* 隐藏滚动条 */
+            white-space: nowrap;
+        }
+
+        .image-scroll-container img {
+            max-height: 350px;
+            max-width: 800px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .artistic-text {
+            font-family: 'Brush Script MT', cursive; /* 使用手写体风格的字体 */
+            font-size: 48px; /* 字体大小 */
+            color: #4A90E2; /* 字体颜色 */
+            text-shadow: 2px 2px 4px #aaa; /* 文字阴影，增加立体感 */
+            text-align: center; /* 居中对齐 */
+            margin-top: 20px; /* 与图片区域之间的间距 */
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .container {
+            display: flex;
+            padding: 20px;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            padding: 20px;
+        }
+
+        #imageDisplay img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 选择框样式 */
+        select {
+            width: 40%; /* 设置宽度，根据需要调整 */
+            padding: 8px 12px; /* 内边距，增加点击区域和舒适度 */
+            border: 1px solid #ccc; /* 边框颜色 */
+            border-radius: 4px; /* 圆角边框 */
+            background-color: white; /* 背景颜色 */
+            font-size: 16px; /* 字体大小 */
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1); /* 轻微的阴影效果 */
+            -webkit-appearance: none; /* 移除iOS上的默认样式 */
+            -moz-appearance: none; /* 移除Firefox上的默认样式 */
+            appearance: none; /* 移除默认样式 */
+            cursor: pointer; /* 将鼠标指针变成手指形状 */
+        }
+
+        /* 当select元素获得焦点时的样式 */
+        select:focus {
+            outline: none; /* 移除焦点时的轮廓 */
+            border-color: #4CAF50; /* 边框颜色变化 */
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5); /* 焦点阴影 */
+        }
+
+        #acknowledgeButton {
+            display: block;
+            margin: 20px auto; /* 上下保持20px的间距，左右自动调整以居中 */
+            padding: 10px 20px; /* 按钮内部的填充，可根据需要调整 */
+            background-color: #4CAF50; /* 按钮背景色，可根据需要调整 */
+            color: white; /* 按钮文字颜色，可根据需要调整 */
+            border: none; /* 去除边框 */
+            cursor: pointer; /* 鼠标悬停时显示指针手势 */
+            border-radius: 5px; /* 给按钮添加圆角 */
+        }
+
+        #acknowledgeButton:hover {
+            background-color: #45a049; /* 鼠标悬停时的背景色，可*/
+        }
+        /* 页面和布局的基本样式 */
+        .container {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            margin: 10px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 标题样式 */
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        /* 表单和上传按钮样式 */
+        #algorithmSelect, #imageUpload {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        /* 图像显示区域的样式 */
+        #imageDisplay {
+            width: 100%;
+            min-height: 300px; /* 可根据需要调整 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-color: #eaeaea; /* 提供一个背景色作为图像加载前的占位符 */
+        }
+
+        #imageDisplay img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* 结果画布的样式 */
+        #resultsCanvas {
+            width: 100%;
+            height: 300px; /* 与左侧图像显示区域的高度保持一致 */
+            background-color: #eaeaea; /* 与左侧图像显示区域的背景色保持一致 */
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+
+        <!-- 导航栏结束 -->
+    </header>
+
+    <main>
+        <div id="noticeModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <p>注意事项：<br>
+                    1、模型测试主要用于告知使用者，该系统会以什么样的形式反馈结果<br>
+                    2、当前系统仅有：火灾烟雾模型<br>
+                    3、使用者选用相应的模型进行测试,测试后再进行摄像头部署</p>
+                <button id="acknowledgeButton">已阅</button> <!-- 添加的按钮 -->
+            </div>
+        </div>
+        <div class="container">
+            <div class="left-panel">
+                <h2>模型选择及测试</h2>
+                <select id="algorithmSelect">
+                    <option value="algorithm1">火灾烟雾模型</option>
+                    <!-- <option value="algorithm2">安全监测模型</option> -->
+                    <!-- More algorithm options -->
+                </select>
+                <input type="file" id="imageUpload" accept="image/*">
+                <div id="imageDisplay"></div>
+            </div>
+        <div class="right-panel">
+            <h2>检测结果</h2>
+            <canvas id="resultsCanvas"></canvas> <!-- 添加此元素以在右侧显示检测结果 -->
+        </div>
+    </main>
+
+
+
+    <footer>
+        <!-- 页脚信息 -->
+        <p>&copy; yolov8 detection project. All rights reserved.</p>
+    </footer>
+</body>
+</html>
+
+
+<script>
+    // 当选择模型时更新变量
+    let selectedModel = 'algorithm1'; // 默认为火灾烟雾模型
+    document.getElementById('algorithmSelect').addEventListener('change', function() {
+        selectedModel = this.value;
+    });
+    // 为文件输入元素添加事件监听器，以处理文件更改
+    document.getElementById('imageUpload').addEventListener('change', function(event) {
+        // 获取用于显示图片和绘制结果的DOM元素
+        const imageDisplay = document.getElementById('imageDisplay');
+        const resultsCanvas = document.getElementById('resultsCanvas');
+        const ctx = resultsCanvas.getContext('2d');  // 获取画布的2D绘图上下文
+        const file = event.target.files[0];  // 获取用户上传的文件的文件数据
+
+        // 定义右侧面板中显示的图片的最大尺寸
+        const MAX_WIDTH = 450;  
+        const MAX_HEIGHT = 350;
+
+        if (file) {
+            const reader = new FileReader();  // 创建一个新的FileReader来读取文件
+            reader.onload = function(e) {
+                // 在左侧面板中显示原始上传的图片
+                imageDisplay.innerHTML = `<img src="${e.target.result}" alt="Uploaded Image">`;
+
+                // 准备将文件发送到服务器
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // 根据所选模型确定API URL
+                const apiUrl = `http://localhost:9621/detect/${selectedModel == 'algorithm1' ? '1' : '2'}`;
+
+                console.log(apiUrl);
+                // 将图像文件发送到服务器进行对象检测
+                fetch(apiUrl, {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())  // 从服务器解析JSON响应
+                .then(detections => {
+                    const img = new Image();  // 创建一个新的图像元素
+                    img.onload = function() {
+                        let width = img.width;
+                        let height = img.height;
+
+                        // 按比例缩放图像以适应最大尺寸
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        // 设置画布大小并绘制缩放后的图像
+                        resultsCanvas.width = width;
+                        resultsCanvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // 在缩放后的图像上绘制检测结果（边界框和标签）
+                        detections.forEach(det => {
+                            const scaleX = width / img.width;  // 计算宽度的缩放因子
+                            const scaleY = height / img.height;  // 计算高度的缩放因子
+                            ctx.beginPath();
+                            // 为检测到的对象绘制一个矩形
+                            ctx.rect(det.box.x1 * scaleX, det.box.y1 * scaleY, (det.box.x2 - det.box.x1) * scaleX, (det.box.y2 - det.box.y1) * scaleY);
+                            ctx.strokeStyle = 'red';  // 矩形边框为红色
+                            ctx.lineWidth = 2;  // 边框宽度
+                            ctx.stroke();
+                            ctx.font = "auto";  // 默认字体
+                            ctx.fillStyle = "yellow";  // 文本颜色为黄色
+                            // 在矩形的左上角上方放置标签和置信度
+                            ctx.fillText(`${det.class_name}: ${det.confidence.toFixed(2)}`, det.box.x1 * scaleX, (det.box.y1 * scaleY) - 5);
+                        });
+                    };
+                    img.src = e.target.result;  // 设置图像元素的源为上传的文件
+                })
+                .catch(error => console.error('Error:', error));
+            };
+            reader.readAsDataURL(file);  // 将文件转换为数据URL并触发onload事件
+        }
+    });
+</script>
+<script>
+    window.onload = function() {
+        showModal();
+    };
+
+    function showModal() {
+        var modal = document.getElementById("noticeModal");
+        var span = document.getElementsByClassName("close-button")[0];
+        var acknowledgeButton = document.getElementById("acknowledgeButton"); // 获取新按钮
+
+        modal.style.display = "block";
+
+        // 关闭按钮点击事件
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // 新增：已阅按钮点击事件
+        acknowledgeButton.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // 点击模态框外区域关闭模态框
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    }
+    document.getElementById('imageUpload').onchange = function(event) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            var img = document.createElement("img");
+            img.src = reader.result;
+            document.getElementById("imageDisplay").innerHTML = '';
+            document.getElementById("imageDisplay").appendChild(img);
+        }
+        reader.readAsDataURL(event.target.files[0]);
+    };
+</script>
+
+<script>
+    function jump()
+    {
+        window.location.href = 'profile.html';
+    }
+</script>

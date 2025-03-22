@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['fire']
+
+roboflow:
+  workspace: data-annotation-library
+  project: dectect_fire
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/data-annotation-library/dectect_fire/dataset/2
